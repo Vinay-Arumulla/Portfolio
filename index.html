@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
         :root {
             --primary: #c74634;
@@ -51,6 +53,75 @@
             color: var(--dark);
             line-height: 1.7;
             overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.2s, background 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-follower {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 180, 216, 0.1);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transition: transform 0.1s;
+        }
+
+        .cursor.hover {
+            transform: scale(2);
+            background: var(--accent);
+        }
+
+        /* Scroll Progress */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: var(--gradient-primary);
+            z-index: 10000;
+            transition: width 0.1s;
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-text {
+            color: var(--accent);
+            font-size: 2rem;
+            font-weight: 700;
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
         #number-sphere-canvas {
@@ -102,6 +173,33 @@
             50% { transform: translateY(-10px); }
         }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
         .animate-fade-in {
             animation: fadeInUp 0.8s ease-out forwards;
         }
@@ -115,6 +213,24 @@
         .delay-3 { animation-delay: 0.3s; }
         .delay-4 { animation-delay: 0.4s; }
 
+        /* Text Reveal Animation */
+        .text-reveal {
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .text-reveal span {
+            display: inline-block;
+            transform: translateY(100%);
+            opacity: 0;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s;
+        }
+
+        .text-reveal.active span {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
         nav {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
@@ -127,11 +243,20 @@
             top: 0;
             z-index: 1000;
             transition: var(--transition);
+            transform: translateY(-100%);
+            animation: slideDown 0.8s ease-out forwards;
+        }
+
+        @keyframes slideDown {
+            to {
+                transform: translateY(0);
+            }
         }
 
         nav.scrolled {
             padding: 0.7rem 5%;
             background: rgba(255, 255, 255, 0.99);
+            box-shadow: var(--shadow-lg);
         }
 
         .logo {
@@ -142,6 +267,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: var(--transition);
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .logo i {
@@ -170,27 +300,29 @@
             border-radius: var(--border-radius);
             transition: var(--transition);
             position: relative;
+            overflow: hidden;
         }
 
-        .nav-links a::after {
+        .nav-links a::before {
             content: '';
             position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: var(--gradient-primary);
-            transition: var(--transition);
-            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+        }
+
+        .nav-links a:hover::before {
+            opacity: 0.1;
         }
 
         .nav-links a:hover {
             color: var(--primary);
-            background: var(--gray-100);
-        }
-
-        .nav-links a:hover::after {
-            width: 80%;
+            transform: translateY(-2px);
         }
 
         .nav-cta {
@@ -202,10 +334,6 @@
         .nav-cta:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
-        }
-
-        .nav-cta::after {
-            display: none;
         }
 
         .mobile-menu-btn {
@@ -245,7 +373,9 @@
             color: var(--accent);
             margin-bottom: 1.5rem;
             border: 1px solid rgba(0,180,216,0.3);
-            animation: fadeInUp 0.8s ease-out;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out 0.5s forwards;
         }
 
         .hero-content h1 {
@@ -255,8 +385,20 @@
             margin-bottom: 0.5rem;
             line-height: 1.1;
             letter-spacing: -1px;
-            animation: fadeInUp 0.8s ease-out 0.1s forwards;
+        }
+
+        .hero-content h1 .char {
+            display: inline-block;
             opacity: 0;
+            transform: translateY(50px) rotateX(90deg);
+            animation: textReveal 0.8s ease-out forwards;
+        }
+
+        @keyframes textReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
         }
 
         .hero-content h1 span {
@@ -271,8 +413,9 @@
             font-weight: 400;
             color: var(--gray-300);
             margin-bottom: 1.5rem;
-            animation: fadeInUp 0.8s ease-out 0.2s forwards;
             opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out 0.8s forwards;
         }
 
         .hero-meta {
@@ -281,8 +424,9 @@
             gap: 2rem;
             margin-bottom: 2.5rem;
             flex-wrap: wrap;
-            animation: fadeInUp 0.8s ease-out 0.3s forwards;
             opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out 1s forwards;
         }
 
         .hero-meta-item {
@@ -291,6 +435,12 @@
             gap: 8px;
             color: var(--gray-400);
             font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .hero-meta-item:hover {
+            color: var(--accent);
+            transform: translateY(-3px);
         }
 
         .hero-meta-item i {
@@ -302,8 +452,9 @@
             justify-content: center;
             gap: 1rem;
             flex-wrap: wrap;
-            animation: fadeInUp 0.8s ease-out 0.4s forwards;
             opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease-out 1.2s forwards;
         }
 
         .btn {
@@ -320,6 +471,24 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .btn-primary {
@@ -382,6 +551,14 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease-out;
+        }
+
+        .section-label.active {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .section-title {
@@ -390,6 +567,14 @@
             color: var(--dark);
             margin-bottom: 1rem;
             letter-spacing: -0.5px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out 0.2s;
+        }
+
+        .section-title.active {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .section-subtitle {
@@ -397,6 +582,14 @@
             color: var(--gray-500);
             max-width: 600px;
             margin: 0 auto;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out 0.4s;
+        }
+
+        .section-subtitle.active {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .about {
@@ -417,6 +610,14 @@
             border-radius: var(--border-radius-lg);
             overflow: hidden;
             box-shadow: var(--shadow-xl);
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: all 1s ease-out;
+        }
+
+        .about-image.active {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .about-image img {
@@ -438,6 +639,17 @@
             padding: 2rem;
             background: linear-gradient(transparent, rgba(0,0,0,0.8));
             color: var(--white);
+        }
+
+        .about-content {
+            opacity: 0;
+            transform: translateX(50px);
+            transition: all 1s ease-out 0.3s;
+        }
+
+        .about-content.active {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .about-content h3 {
@@ -466,10 +678,21 @@
             background: var(--gray-100);
             border-radius: var(--border-radius);
             transition: var(--transition);
+            opacity: 0;
+            transform: translateY(30px);
         }
 
+        .stat-card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stat-card:nth-child(1).active { transition-delay: 0.1s; }
+        .stat-card:nth-child(2).active { transition-delay: 0.2s; }
+        .stat-card:nth-child(3).active { transition-delay: 0.3s; }
+
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.05);
             box-shadow: var(--shadow-md);
         }
 
@@ -509,7 +732,19 @@
             transition: var(--transition);
             position: relative;
             overflow: hidden;
+            opacity: 0;
+            transform: translateY(50px);
         }
+
+        .skill-card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .skill-card:nth-child(1).active { transition-delay: 0.1s; }
+        .skill-card:nth-child(2).active { transition-delay: 0.2s; }
+        .skill-card:nth-child(3).active { transition-delay: 0.3s; }
+        .skill-card:nth-child(4).active { transition-delay: 0.4s; }
 
         .skill-card::before {
             content: '';
@@ -543,6 +778,11 @@
             margin-bottom: 1.5rem;
             font-size: 1.8rem;
             color: var(--white);
+            transition: var(--transition);
+        }
+
+        .skill-card:hover .skill-icon {
+            transform: rotateY(360deg);
         }
 
         .skill-card h3 {
@@ -572,6 +812,13 @@
             font-size: 0.8rem;
             color: var(--secondary);
             font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .skill-tag:hover {
+            background: var(--secondary);
+            color: var(--white);
+            transform: translateY(-2px);
         }
 
         .experience {
@@ -605,6 +852,13 @@
             position: relative;
             transition: var(--transition);
             border: 1px solid var(--gray-200);
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        .timeline-item.active {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .timeline-item::before {
@@ -671,6 +925,12 @@
             border-radius: var(--border-radius);
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--secondary);
+            transition: var(--transition);
+        }
+
+        .project-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
         }
 
         .project-card:last-child {
@@ -737,6 +997,7 @@
             background: var(--secondary);
             color: var(--white);
             border-color: var(--secondary);
+            transform: translateY(-2px);
         }
 
         .education {
@@ -757,11 +1018,18 @@
             border-radius: var(--border-radius-lg);
             border: 1px solid var(--gray-200);
             transition: var(--transition);
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .edu-card.active {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .edu-card:hover {
             box-shadow: var(--shadow-lg);
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.02);
         }
 
         .edu-card h3 {
@@ -820,6 +1088,12 @@
             position: relative;
             color: var(--gray-600);
             border-bottom: 1px solid var(--gray-200);
+            transition: var(--transition);
+        }
+
+        .cert-list li:hover {
+            color: var(--primary);
+            transform: translateX(5px);
         }
 
         .cert-list li:last-child {
@@ -865,7 +1139,19 @@
             text-align: center;
             transition: var(--transition);
             text-decoration: none;
+            opacity: 0;
+            transform: translateY(50px);
         }
+
+        .contact-card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .contact-card:nth-child(1).active { transition-delay: 0.1s; }
+        .contact-card:nth-child(2).active { transition-delay: 0.2s; }
+        .contact-card:nth-child(3).active { transition-delay: 0.3s; }
+        .contact-card:nth-child(4).active { transition-delay: 0.4s; }
 
         .contact-card:hover {
             transform: translateY(-10px);
@@ -908,6 +1194,14 @@
             justify-content: center;
             gap: 1rem;
             margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out 0.6s;
+        }
+
+        .social-links.active {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .social-link {
@@ -928,7 +1222,7 @@
 
         .social-link:hover {
             background: var(--gradient-primary);
-            transform: translateY(-5px);
+            transform: translateY(-5px) rotate(360deg);
             box-shadow: 0 10px 30px rgba(199,70,52,0.4);
         }
 
@@ -961,6 +1255,14 @@
             
             .hero-content h1 {
                 font-size: 3rem;
+            }
+
+            body {
+                cursor: auto;
+            }
+
+            .cursor, .cursor-follower {
+                display: none;
             }
         }
 
@@ -1027,33 +1329,39 @@
             }
         }
 
-        .reveal {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s ease-out;
-        }
-
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
+        /* Magnetic Button Effect */
+        .magnetic {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
 </head>
 <body>
 
+    <!-- Loading Screen -->
+    <div class="loader">
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress"></div>
+
     <canvas id="number-sphere-canvas"></canvas>
 
     <nav id="navbar">
-        <div class="logo">
+        <div class="logo magnetic">
             <i class="fas fa-code"></i>
             Vinay<span>Arumulla</span>
         </div>
         <div class="nav-links">
-            <a href="#about">About</a>
-            <a href="#skills">Skills</a>
-            <a href="#experience">Experience</a>
-            <a href="#education">Education</a>
-            <a href="#contact" class="nav-cta">Contact</a>
+            <a href="#about" class="magnetic">About</a>
+            <a href="#skills" class="magnetic">Skills</a>
+            <a href="#experience" class="magnetic">Experience</a>
+            <a href="#education" class="magnetic">Education</a>
+            <a href="#contact" class="nav-cta magnetic">Contact</a>
         </div>
         <button class="mobile-menu-btn">
             <i class="fas fa-bars"></i>
@@ -1062,30 +1370,30 @@
 
     <header class="hero">
         <div class="hero-content">
-            <div class="hero-badge">
+            <div class="hero-badge magnetic">
                 <i class="fas fa-award"></i> Oracle Certified Specialist
             </div>
-            <h1>Vinay <span>Arumulla</span></h1>
+            <h1 id="hero-title">Vinay Arumulla</h1>
             <h2>Oracle Fusion Technical Developer | BIP | OTBI | OIC | Integrations | BICC | SQL</h2>
             <div class="hero-meta">
-                <div class="hero-meta-item">
+                <div class="hero-meta-item magnetic">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>Hyderabad, India</span>
                 </div>
-                <div class="hero-meta-item">
+                <div class="hero-meta-item magnetic">
                     <i class="fas fa-phone"></i>
                     <span>+91 6301440590</span>
                 </div>
-                <div class="hero-meta-item">
+                <div class="hero-meta-item magnetic">
                     <i class="fas fa-envelope"></i>
                     <span>vinnu4339@gmail.com</span>
                 </div>
             </div>
             <div class="hero-buttons">
-                <a href="#contact" class="btn btn-primary">
+                <a href="#contact" class="btn btn-primary magnetic">
                     <i class="fas fa-paper-plane"></i> Get In Touch
                 </a>
-                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="btn btn-outline">
+                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="btn btn-outline magnetic">
                     <i class="fab fa-linkedin"></i> LinkedIn
                 </a>
             </div>
@@ -1096,34 +1404,34 @@
     </header>
 
     <section class="about" id="about">
-        <div class="section-header reveal">
+        <div class="section-header">
             <span class="section-label">About Me</span>
             <h2 class="section-title">Professional Summary</h2>
             <p class="section-subtitle">Results-driven Oracle Cloud Technical Developer with proven expertise in enterprise solutions</p>
         </div>
         <div class="about-grid">
-            <div class="about-image reveal">
+            <div class="about-image">
                 <img src="profile.png" alt="Vinay Arumulla">
                 <div class="about-image-overlay">
                     <p><i class="fas fa-briefcase"></i> 4+ Years Experience</p>
                 </div>
             </div>
-            <div class="about-content reveal">
+            <div class="about-content">
                 <h3>Building Scalable Oracle Fusion Solutions</h3>
                 <p>Results-driven Oracle Cloud Technical Developer with <strong>4 years of experience</strong> delivering <strong>4 full-lifecycle projects</strong> for global enterprise clients (JCI, HOAG, BHE).</p>
                 <p>Adept in <strong>Oracle Integration Cloud (OIC), BI Publisher, BICC, OTBI, Web Services (SOAP/REST), and SQL</strong>. Proven expertise in technical design, data migration, custom reporting, and integration with third-party systems.</p>
                 <p>Strong understanding of business processes and functional flows, with a track record of delivering scalable and performance-optimized solutions in DevOps, Agile, and Waterfall project environments. Known for effective stakeholder collaboration and on-time delivery in global implementations and support projects.</p>
                 <div class="about-stats">
                     <div class="stat-card">
-                        <div class="stat-number">4+</div>
+                        <div class="stat-number" data-target="4">0</div>
                         <div class="stat-label">Years Experience</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">4</div>
+                        <div class="stat-number" data-target="4">0</div>
                         <div class="stat-label">Full-Lifecycle Projects</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">5</div>
+                        <div class="stat-number" data-target="5">0</div>
                         <div class="stat-label">Oracle Certifications</div>
                     </div>
                 </div>
@@ -1134,13 +1442,13 @@
     <section class="skills parallax-section" id="skills">
         <div class="parallax-overlay"></div>
         <div class="parallax-content">
-            <div class="section-header reveal">
+            <div class="section-header">
                 <span class="section-label">Expertise</span>
                 <h2 class="section-title">Technical Skills</h2>
                 <p class="section-subtitle">Comprehensive skill set across Oracle Fusion ecosystem and integration technologies</p>
             </div>
             <div class="skills-grid">
-                <div class="skill-card reveal">
+                <div class="skill-card">
                     <div class="skill-icon">
                         <i class="fas fa-cloud"></i>
                     </div>
@@ -1153,7 +1461,7 @@
                         <span class="skill-tag">HCM Core HR</span>
                     </div>
                 </div>
-                <div class="skill-card reveal">
+                <div class="skill-card">
                     <div class="skill-icon">
                         <i class="fas fa-file-alt"></i>
                     </div>
@@ -1166,7 +1474,7 @@
                         <span class="skill-tag">SQL Models</span>
                     </div>
                 </div>
-                <div class="skill-card reveal">
+                <div class="skill-card">
                     <div class="skill-icon">
                         <i class="fas fa-project-diagram"></i>
                     </div>
@@ -1179,7 +1487,7 @@
                         <span class="skill-tag">SFTP/FTP</span>
                     </div>
                 </div>
-                <div class="skill-card reveal">
+                <div class="skill-card">
                     <div class="skill-icon">
                         <i class="fas fa-cogs"></i>
                     </div>
@@ -1197,13 +1505,13 @@
     </section>
 
     <section class="experience" id="experience">
-        <div class="section-header reveal">
+        <div class="section-header">
             <span class="section-label">Career Path</span>
             <h2 class="section-title">Work Experience</h2>
             <p class="section-subtitle">Progressive growth with leading organizations on global implementations</p>
         </div>
         <div class="timeline">
-            <div class="timeline-item reveal">
+            <div class="timeline-item">
                 <div class="timeline-header">
                     <div class="company-info">
                         <h3>Accenture Solutions Pvt Ltd</h3>
@@ -1305,7 +1613,7 @@
                 </div>
             </div>
 
-            <div class="timeline-item reveal" style="border-left-color: var(--gray-500);">
+            <div class="timeline-item" style="border-left-color: var(--gray-500);">
                 <div class="timeline-header">
                     <div class="company-info">
                         <h3>Supraja Technologies</h3>
@@ -1325,13 +1633,13 @@
     </section>
 
     <section class="education" id="education">
-        <div class="section-header reveal">
+        <div class="section-header">
             <span class="section-label">Qualifications</span>
             <h2 class="section-title">Education & Certifications</h2>
             <p class="section-subtitle">Academic background and professional certifications</p>
         </div>
         <div class="edu-grid">
-            <div class="edu-card reveal">
+            <div class="edu-card">
                 <h3><i class="fas fa-graduation-cap"></i> Education</h3>
                 <div class="edu-item">
                     <h4>Bachelor of Technology – Information Technology</h4>
@@ -1341,7 +1649,7 @@
                     </div>
                 </div>
             </div>
-            <div class="edu-card reveal">
+            <div class="edu-card">
                 <h3><i class="fas fa-certificate"></i> Certifications</h3>
                 <ul class="cert-list">
                     <li>Oracle Cloud Platform Application Integration Certified Specialist</li>
@@ -1356,34 +1664,34 @@
     <section class="contact parallax-section" id="contact">
         <div class="parallax-overlay"></div>
         <div class="parallax-content">
-            <div class="section-header reveal">
+            <div class="section-header">
                 <span class="section-label">Get In Touch</span>
                 <h2 class="section-title">Let's Connect</h2>
                 <p class="section-subtitle">Available for Oracle Cloud Architecture and Development Opportunities</p>
             </div>
             <div class="contact-grid">
-                <a href="mailto:vinnu4339@gmail.com" class="contact-card reveal">
+                <a href="mailto:vinnu4339@gmail.com" class="contact-card magnetic">
                     <div class="contact-icon">
                         <i class="fas fa-envelope"></i>
                     </div>
                     <h3>Email</h3>
                     <p>vinnu4339@gmail.com</p>
                 </a>
-                <a href="tel:+916301440590" class="contact-card reveal">
+                <a href="tel:+916301440590" class="contact-card magnetic">
                     <div class="contact-icon">
                         <i class="fas fa-phone"></i>
                     </div>
                     <h3>Phone</h3>
                     <p>+91 6301440590</p>
                 </a>
-                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="contact-card reveal">
+                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="contact-card magnetic">
                     <div class="contact-icon">
                         <i class="fab fa-linkedin"></i>
                     </div>
                     <h3>LinkedIn</h3>
                     <p>linkedin.com/in/arumulla-vinay</p>
                 </a>
-                <a href="https://vinay-arumulla.github.io/Portfolio/" target="_blank" class="contact-card reveal">
+                <a href="https://vinay-arumulla.github.io/Portfolio/" target="_blank" class="contact-card magnetic">
                     <div class="contact-icon">
                         <i class="fab fa-github"></i>
                     </div>
@@ -1391,14 +1699,14 @@
                     <p>vinay-arumulla.github.io/Portfolio</p>
                 </a>
             </div>
-            <div class="social-links reveal">
-                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="social-link">
+            <div class="social-links">
+                <a href="https://linkedin.com/in/arumulla-vinay" target="_blank" class="social-link magnetic">
                     <i class="fab fa-linkedin"></i>
                 </a>
-                <a href="mailto:vinnu4339@gmail.com" class="social-link">
+                <a href="mailto:vinnu4339@gmail.com" class="social-link magnetic">
                     <i class="fas fa-envelope"></i>
                 </a>
-                <a href="https://github.com/Vinay-Arumulla" target="_blank" class="social-link">
+                <a href="https://github.com/Vinay-Arumulla" target="_blank" class="social-link magnetic">
                     <i class="fab fa-github"></i>
                 </a>
             </div>
@@ -1406,34 +1714,169 @@
     </section>
 
     <footer>
-        <p>&copy; 2025 Vinay Arumulla. All Rights Reserved. | Built with <i class="fas fa-heart" style="color: var(--primary);"></i> & Oracle Cloud Expertise</p>
+        <p>&copy; 2026 Vinay Arumulla. All Rights Reserved. | Built with <i class="fas fa-heart" style="color: var(--primary);"></i> & Oracle Cloud Expertise</p>
     </footer>
 
     <script>
-        window.addEventListener('scroll', function() {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
+        // Hide loader after page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.querySelector('.loader').classList.add('hidden');
+                animateHeroTitle();
+            }, 1000);
         });
 
-        function reveal() {
-            const reveals = document.querySelectorAll('.reveal');
-            for (let i = 0; i < reveals.length; i++) {
-                const windowHeight = window.innerHeight;
-                const elementTop = reveals[i].getBoundingClientRect().top;
-                const elementVisible = 150;
-                if (elementTop < windowHeight - elementVisible) {
-                    reveals[i].classList.add('active');
-                }
-            }
+        // Custom Cursor
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        const magneticElements = document.querySelectorAll('.magnetic');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX - 10 + 'px';
+                cursorFollower.style.top = e.clientY - 10 + 'px';
+            }, 100);
+        });
+
+        // Magnetic effect
+        magneticElements.forEach(elem => {
+            elem.addEventListener('mousemove', (e) => {
+                const rect = elem.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                elem.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                cursor.classList.add('hover');
+            });
+
+            elem.addEventListener('mouseleave', () => {
+                elem.style.transform = 'translate(0, 0)';
+                cursor.classList.remove('hover');
+            });
+        });
+
+        // Scroll Progress
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.querySelector('.scroll-progress').style.width = scrolled + '%';
+        });
+
+        // Animate Hero Title
+        function animateHeroTitle() {
+            const title = document.getElementById('hero-title');
+            const text = title.innerHTML;
+            title.innerHTML = '';
+            
+            let charIndex = 0;
+            const words = text.split(' ');
+            
+            words.forEach((word, wordIndex) => {
+                const wordSpan = document.createElement('span');
+                wordSpan.style.display = 'inline-block';
+                wordSpan.style.marginRight = '0.25em';
+                
+                [...word].forEach((char, charIndex) => {
+                    const charSpan = document.createElement('span');
+                    charSpan.className = 'char';
+                    charSpan.textContent = char;
+                    charSpan.style.animationDelay = `${(wordIndex * 10 + charIndex) * 0.05}s`;
+                    wordSpan.appendChild(charSpan);
+                });
+                
+                title.appendChild(wordSpan);
+            });
         }
 
-        window.addEventListener('scroll', reveal);
-        reveal();
+        // GSAP ScrollTrigger Animations
+        gsap.registerPlugin(ScrollTrigger);
 
+        // Animate section headers
+        const sections = document.querySelectorAll('section');
+        sections.forEach(section => {
+            const labels = section.querySelectorAll('.section-label');
+            const titles = section.querySelectorAll('.section-title');
+            const subtitles = section.querySelectorAll('.section-subtitle');
+
+            labels.forEach(label => {
+                ScrollTrigger.create({
+                    trigger: label,
+                    start: 'top 80%',
+                    onEnter: () => label.classList.add('active')
+                });
+            });
+
+            titles.forEach(title => {
+                ScrollTrigger.create({
+                    trigger: title,
+                    start: 'top 80%',
+                    onEnter: () => title.classList.add('active')
+                });
+            });
+
+            subtitles.forEach(subtitle => {
+                ScrollTrigger.create({
+                    trigger: subtitle,
+                    start: 'top 80%',
+                    onEnter: () => subtitle.classList.add('active')
+                });
+            });
+        });
+
+        // Animate elements on scroll
+        const animateOnScroll = (elements, className) => {
+            elements.forEach(element => {
+                ScrollTrigger.create({
+                    trigger: element,
+                    start: 'top 85%',
+                    onEnter: () => element.classList.add(className)
+                });
+            });
+        };
+
+        animateOnScroll(document.querySelectorAll('.about-image'), 'active');
+        animateOnScroll(document.querySelectorAll('.about-content'), 'active');
+        animateOnScroll(document.querySelectorAll('.stat-card'), 'active');
+        animateOnScroll(document.querySelectorAll('.skill-card'), 'active');
+        animateOnScroll(document.querySelectorAll('.timeline-item'), 'active');
+        animateOnScroll(document.querySelectorAll('.edu-card'), 'active');
+        animateOnScroll(document.querySelectorAll('.contact-card'), 'active');
+        animateOnScroll(document.querySelectorAll('.social-links'), 'active');
+
+        // Animate numbers
+        const animateNumbers = () => {
+            const numbers = document.querySelectorAll('.stat-number');
+            numbers.forEach(num => {
+                const target = parseInt(num.getAttribute('data-target'));
+                const duration = 2000;
+                const increment = target / (duration / 16);
+                let current = 0;
+
+                const updateNumber = () => {
+                    current += increment;
+                    if (current < target) {
+                        num.textContent = Math.floor(current) + '+';
+                        requestAnimationFrame(updateNumber);
+                    } else {
+                        num.textContent = target + '+';
+                    }
+                };
+
+                ScrollTrigger.create({
+                    trigger: num,
+                    start: 'top 80%',
+                    onEnter: () => updateNumber()
+                });
+            });
+        };
+
+        animateNumbers();
+
+        // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1447,6 +1890,17 @@
             });
         });
 
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Three.js Number Sphere Effect
         (function() {
             const canvas = document.getElementById('number-sphere-canvas');
             const scene = new THREE.Scene();
